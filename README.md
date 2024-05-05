@@ -7,6 +7,8 @@ This data is exposed via the Steam API using the "featured categories" resource 
 
 The API payload includes game metadata as well as an image resource. These details are used to populate frames in the Tidbyt app.
 
+![Preview](steam_top_sellers.gif "Preview")
+
 ## Usage
 After installing [Pixlet](https://tidbyt.dev/docs/build/installing-pixlet), run the following commands to render/serve the image locally. 
 

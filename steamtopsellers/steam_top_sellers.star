@@ -3,11 +3,16 @@ load("http.star", "http")
 load("animation.star", "animation")
 load("random.star", "random")
 
-global_http_ttl_seconds = 60
-global_result_limit = 1 # Limit results to minimize rendered file size
+GLOBAL_HTTP_TTL_SECONDS = 600
+GLOBAL_RESULT_LIMIT = 1 # Limit results to minimize rendered file size
+FEATURED_CATEGORIES_RESOURCE = "https://store.steampowered.com/api/featuredcategories"
 
 def main(config):
-    top_sellers = get_top_sellers()
+    response = call_steam_api()
+    if response.status_code != 200:
+        return handle_failure()
+    
+    top_sellers = parse_top_sellers(response)
     frames = build_frames(top_sellers)
 
     return render.Root(
@@ -16,17 +21,16 @@ def main(config):
         delay=90
     )
 
-def get_top_sellers():
+def call_steam_api():
     # Fetch the featured games from the Steam API
-    url = "https://store.steampowered.com/api/featuredcategories"
-    response = http.get(
-        url, 
-        ttl_seconds = global_http_ttl_seconds
+    return http.get(
+        FEATURED_CATEGORIES_RESOURCE, 
+        ttl_seconds = GLOBAL_HTTP_TTL_SECONDS
     )
-    if response.status_code != 200:
-        fail("GET %s failed with status %d: %s" % (url, response.status_code, response.body()))
-    
+
+def parse_top_sellers(response):
     raw_data = response.json()
+    # TODO handle json failures and inconsistent data
     #print("raw_data: %s" % (raw_data))
     top_sellers = raw_data['top_sellers']['items']
     #print("top_sellers: %s" % (top_sellers))
@@ -42,7 +46,7 @@ def build_frames(top_sellers):
         name = item['name']
 
         # Omit Steam Deck entries
-        if name != "Steam Deck" and counter < global_result_limit:
+        if name != "Steam Deck" and counter < GLOBAL_RESULT_LIMIT:
             print("name: %s, counter: %s" % (name, str(counter)))
             discount_percent = item['discount_percent']
             final_price_formatted = format_price(
@@ -150,7 +154,7 @@ def fetch_image(image_url):
     print("    image: %s" % (image_url))
     response = http.get(
         image_url, 
-        ttl_seconds = global_http_ttl_seconds
+        ttl_seconds = GLOBAL_HTTP_TTL_SECONDS
     )
     if response.status_code != 200:
         fail("GET %s failed with status %d: %s" % (image_url, response.status_code, response.body()))
@@ -171,6 +175,14 @@ def format_price(amount, currency, discount_percent):
     #formatted_amount += ' ' + currency
     print("    price: %s" % (formatted_amount))
     return formatted_amount
+
+def handle_failure():
+    return render.Root(
+        child = render.Marquee(
+            width = 64,
+            child = render.Text("No data available or API failed!"),
+        ),
+    )
 
 def get_discount(discount_percent):
     if discount_percent > 0:

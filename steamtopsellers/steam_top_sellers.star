@@ -69,12 +69,12 @@ def build_frames(top_sellers):
             )
             image = fetch_image(item["small_capsule_image"])
 
-            # Add Details
+            # Add Image Frame
+            frames.append(get_image_widget(image))
+
+            # Add Details Frame
             padded_name = pad_string(name, MARQUEE_NAME_LENGTH)
             frames.append(get_details_widget(padded_name, final_price_formatted, discount_percent))
-
-            # Add Image
-            frames.append(get_image_widget(image))
 
             counter = counter + 1
 
